@@ -20,11 +20,11 @@ class Loader:
             title TEXT,
             authors TEXT[],
             published_date DATE,
-            doi TEXT,
+            doi TEXT UNIQUE,
             journal TEXT,
             publisher TEXT,
             is_referenced_by_count INTEGER,
-            reference_count INTEGER,
+            reference_count INTEGER
         );
         """
         self.insert_query = f"""
@@ -42,13 +42,11 @@ class Loader:
         Connect to the PostgreSQL database.
         """
         try:
-            import psycopg2
-            from sqlalchemy import create_engine
+            import psycopg
 
             # Create a connection string
             conn_string = f"postgresql://{self.config.db_user}:{self.config.db_password}@{self.config.db_host}:{self.config.db_port}/{self.config.db_name}"
-            self.engine = create_engine(conn_string)
-            self.connection = self.engine.connect()
+            self.connection = psycopg.connect(conn_string)
             self.cursor = self.connection.cursor()
             self.logger.info("Connected to the database successfully.")
         except Exception as e:
@@ -76,11 +74,11 @@ class Loader:
         Load normalized data into the database.
         """
         try:
-            self.cursor = self.connection.cursor()
+            self.connect_to_db()
             for record in data:
                 self.cursor.execute(self.insert_query, (
                     record["title"],
-                    record["authors"],
+                    record["authors"].split(", "),
                     record["published_date"],
                     record["doi"],
                     record["journal"],
