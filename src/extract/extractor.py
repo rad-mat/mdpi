@@ -29,33 +29,62 @@ class Extractor:
         self.logger.info("Headers set for API request: %s", self.headers)
         self.logger.info("DataLoader initialized successfully.")
 
-    # todo - function to fetch data from CrossRef API by looping through the pages
-    def fetch_and_save_data(self):
+    def fetch_and_save_data(self, max_pages):
+        """
+        Fetch data from CrossRef API by looping through multiple pages.
+        
+        Args:
+            max_pages (int): Maximum number of pages to fetch
+        """
         self.logger.info("Fetching data from CrossRef API...")
-        self.logger.error("Looping API results to be implemented...")
-
-        # Example of how to use tqdm for progress bar
-        # for i in tqdm(range(100), desc="Loading", unit="item"):
-        #     time.sleep(0.1)  # Simulate some work being done
-        #     self.logger.debug("Progress: %d%%", (i + 1) * 100 / 100)
-
-        # Fetching some data
-        try:
-            response = requests.get(self.config.api_endpoint, headers=self.headers)
-            response.raise_for_status()  # Raise an error for bad responses
-            data = response.json()
-            self.logger.info("Data fetched successfully from API.")
-        except HTTPError as http_err:
-            self.logger.error(f"HTTP error occurred: {http_err}")
-        except Exception as err:
-            self.logger.error(f"An error occurred: {err}")
-
-        # dump raw json response data to a file
-        now = datetime.now()
-        filename = now.strftime("%Y%m%d_%H%M%S") + "_data.json"
-        filepath = f"./data/raw/{filename}"
-        with open(filepath, "w") as f:
-            json.dump(data, f, indent=4)
+        
+        all_data = []
+        
+        for page_offset in tqdm(range(0, max_pages * 200, 200), desc="Fetching pages", unit="page"):
+            try:
+                # Add offset parameter for pagination
+                url = f"{self.config.api_endpoint}&offset={page_offset}"
+                self.logger.info(f"Fetching page with offset {page_offset}: {url}")
+                
+                response = requests.get(url, headers=self.headers)
+                response.raise_for_status()
+                data = response.json()
+                
+                # Check if we have items in the response
+                if "message" in data and "items" in data["message"]:
+                    items = data["message"]["items"]
+                    if not items:  # No more items, break the loop
+                        self.logger.info("No more items found, stopping pagination")
+                        break
+                    
+                    all_data.append(data)
+                    self.logger.info(f"Fetched {len(items)} items from page offset {page_offset}")
+                else:
+                    self.logger.warning(f"No 'message' or 'items' found in response for offset {page_offset}")
+                    break
+                    
+            except HTTPError as http_err:
+                self.logger.error(f"HTTP error occurred for offset {page_offset}: {http_err}")
+                break
+            except Exception as err:
+                self.logger.error(f"An error occurred for offset {page_offset}: {err}")
+                break
+        
+        self.logger.info(f"Fetched data from {len(all_data)} pages successfully.")
+        
+        # Save each page's data to separate files
+        for i, data in enumerate(all_data):
+            now = datetime.now()
+            filename = now.strftime("%Y%m%d_%H%M%S") + f"_page_{i+1}_data.json"
+            filepath = f"./data/raw/{filename}"
+            
+            # Ensure directory exists
+            os.makedirs(os.path.dirname(filepath), exist_ok=True)
+            
+            with open(filepath, "w") as f:
+                json.dump(data, f, indent=4)
+            
+            self.logger.info(f"Saved page {i+1} data to {filepath}")
 
     def extract_raw_data(self):
         """

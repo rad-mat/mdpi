@@ -28,7 +28,7 @@ logger = setup_logger(
 
 # API client for CrossRef works api endpoint
 extract = Extractor(config, logger)
-extract.fetch_and_save_data()
+extract.fetch_and_save_data(max_pages=5)
 raw_data = extract.extract_raw_data()
 
 normalizer = Normalizer()
