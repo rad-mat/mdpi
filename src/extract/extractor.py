@@ -8,6 +8,7 @@ from requests.exceptions import HTTPError
 from tqdm import tqdm
 
 from src.utils.config import Config
+from src.utils.s3_client import S3Client
 
 class Extractor:
     """
@@ -23,6 +24,7 @@ class Extractor:
         self.headers = {
             "Accept": "application/json",
         }
+        self.s3_client = S3Client(config, logger)
 
         self.logger = logger
         self.logger.info("DataLoader initialized with config: %s", config.__dict__)
@@ -72,7 +74,10 @@ class Extractor:
         
         self.logger.info(f"Fetched data from {len(all_data)} pages successfully.")
         
-        # Save each page's data to separate files
+        # Create S3 bucket for raw data if it doesn't exist
+        self.s3_client.create_bucket_if_not_exists(self.config.s3_bucket_raw)
+        
+        # Save each page's data to separate files (local backup) and S3
         for i, data in enumerate(all_data):
             now = datetime.now()
             filename = now.strftime("%Y%m%d_%H%M%S") + f"_page_{i+1}_data.json"
@@ -81,10 +86,18 @@ class Extractor:
             # Ensure directory exists
             os.makedirs(os.path.dirname(filepath), exist_ok=True)
             
+            # Save locally
             with open(filepath, "w") as f:
                 json.dump(data, f, indent=4)
             
             self.logger.info(f"Saved page {i+1} data to {filepath}")
+            
+            # Save to S3
+            s3_object_name = f"crossref/raw/{filename}"
+            if self.s3_client.upload_json(self.config.s3_bucket_raw, s3_object_name, data):
+                self.logger.info(f"Uploaded page {i+1} data to S3: {s3_object_name}")
+            else:
+                self.logger.error(f"Failed to upload page {i+1} data to S3")
 
     def extract_raw_data(self):
         """

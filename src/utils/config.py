@@ -13,6 +13,12 @@ class Config:
         db_name (str): Database name.
         db_user (str): Database user.
         db_password (str): Database password.
+        s3_host (str): MinIO S3 host.
+        s3_port (int): MinIO S3 port.
+        s3_access_key (str): MinIO S3 access key.
+        s3_secret_key (str): MinIO S3 secret key.
+        s3_secure (bool): Whether to use HTTPS for S3 connection.
+        s3_bucket_raw (str): S3 bucket name for raw data.
     """
 
     def __init__(self, config: Dict[str, str]):
@@ -23,6 +29,13 @@ class Config:
         self.db_name = config.get("DB_NAME", "my_database")
         self.db_user = config.get("DB_USER", "my_user")
         self.db_password = config.get("DB_PASSWORD", "my_password")
+
+        self.s3_host = config.get("S3_HOST", "localhost")
+        self.s3_port = int(config.get("S3_PORT", 9000))
+        self.s3_access_key = config.get("S3_ACCESS_KEY", "minioadmin")
+        self.s3_secret_key = config.get("S3_SECRET_KEY", "minioadmin123")
+        self.s3_secure = config.get("S3_SECURE", "false").lower() == "true"
+        self.s3_bucket_raw = config.get("S3_BUCKET_RAW", "crossref-raw")
 
         self.log_file = config.get("LOG_FILE", "app.log")
         self.log_level = config.get("LOG_LEVEL", "INFO").upper()
@@ -48,8 +61,19 @@ class Config:
             raise ValueError("DB_PASSWORD is required.")
         if not isinstance(self.db_port, int) or self.db_port <= 0:
             raise ValueError("DB_PORT must be a positive integer.")
+
+        if not self.s3_host:
+            raise ValueError("S3_HOST is required.")
+        if not isinstance(self.s3_port, int) or self.s3_port <= 0:
+            raise ValueError("S3_PORT must be a positive integer.")
+        if not self.s3_access_key:
+            raise ValueError("S3_ACCESS_KEY is required.")
+        if not self.s3_secret_key:
+            raise ValueError("S3_SECRET_KEY is required.")
+        if not self.s3_bucket_raw:
+            raise ValueError("S3_BUCKET_RAW is required.")
         
         if not isinstance(self.log_file, str) or not self.log_file.strip():
             raise ValueError("LOG_FILE must be a non-empty string.")
         if not isinstance(self.log_level, str) or not self.log_level.strip():
-            raise ValueError("LOG_LEVEL must be a non-empty string.")        
+            raise ValueError("LOG_LEVEL must be a non-empty string.")
