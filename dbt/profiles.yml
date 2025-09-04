@@ -1,0 +1,13 @@
+scilit_analytics:
+  outputs:
+    dev:
+      type: postgres
+      host: localhost
+      user: my_user
+      password: my_password
+      port: 5432
+      dbname: my_database
+      schema: public
+      threads: 4
+      keepalives_idle: 0
+  target: dev

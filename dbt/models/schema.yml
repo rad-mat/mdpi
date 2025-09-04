@@ -1,0 +1,194 @@
+version: 2
+
+models:
+  - name: stg_crossref_publications
+    description: "Staging model for CrossRef publications data with cleaned and standardized fields"
+    columns:
+      - name: id
+        description: "Primary key from source table"
+        tests:
+          - unique
+          - not_null
+      - name: title
+        description: "Publication title"
+        tests:
+          - not_null
+      - name: doi
+        description: "Digital Object Identifier (DOI) in lowercase"
+        tests:
+          - unique:
+              config:
+                where: "doi != ''"
+      - name: published_date
+        description: "Publication date"
+        tests:
+          - not_null
+      - name: published_year
+        description: "Publication year extracted from published_date"
+        tests:
+          - not_null
+          - accepted_values:
+              config:
+                values: "{{ range(1900, 2030) | list }}"
+      - name: is_referenced_by_count
+        description: "Number of citations received"
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              config:
+                min_value: 0
+      - name: reference_count
+        description: "Number of references made"
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              config:
+                min_value: 0
+      - name: data_quality_score
+        description: "Data quality score from 0 to 1"
+        tests:
+          - dbt_utils.accepted_range:
+              config:
+                min_value: 0
+                max_value: 1
+
+  - name: stg_crossref_authors
+    description: "Staging model for author data extracted from publications"
+    columns:
+      - name: publication_id
+        description: "Foreign key to publications"
+        tests:
+          - not_null
+          - relationships:
+              to: ref('stg_crossref_publications')
+              field: id
+      - name: author_name
+        description: "Author name"
+        tests:
+          - not_null
+      - name: author_position
+        description: "Position of author in publication (1 = first author)"
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              config:
+                min_value: 1
+
+  - name: dim_publications
+    description: "Final publications dimension with calculated metrics"
+    columns:
+      - name: id
+        description: "Primary key"
+        tests:
+          - unique
+          - not_null
+      - name: citation_impact_score
+        description: "Calculated citation impact score"
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              config:
+                min_value: 0
+      - name: data_quality_score
+        description: "Data quality score from 0 to 1"
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              config:
+                min_value: 0
+                max_value: 1
+
+  - name: dim_authors
+    description: "Author dimension with aggregated metrics"
+    columns:
+      - name: author_id
+        description: "Unique identifier for author (MD5 hash of name)"
+        tests:
+          - unique
+          - not_null
+      - name: total_publications
+        description: "Total number of publications by author"
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              config:
+                min_value: 1
+      - name: total_citations
+        description: "Total citations across all publications"
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              config:
+                min_value: 0
+
+  - name: analytics_citations_by_year
+    description: "Annual citation trends and metrics"
+    columns:
+      - name: published_year
+        description: "Year of publication"
+        tests:
+          - unique
+          - not_null
+      - name: total_publications
+        description: "Number of publications in year"
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              config:
+                min_value: 0
+      - name: citation_rate
+        description: "Percentage of publications that received citations"
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              config:
+                min_value: 0
+                max_value: 1
+
+  - name: analytics_citations_by_journal
+    description: "Journal-level citation analysis and rankings"
+    columns:
+      - name: journal
+        description: "Journal name"
+        tests:
+          - unique
+          - not_null
+      - name: total_publications
+        description: "Number of publications in journal"
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              config:
+                min_value: 5  # Filtered in model
+      - name: journal_impact_score
+        description: "Calculated journal impact score (0-100)"
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              config:
+                min_value: 0
+                max_value: 100
+
+  - name: analytics_citations_by_publisher
+    description: "Publisher-level citation analysis and market share"
+    columns:
+      - name: publisher
+        description: "Publisher name"
+        tests:
+          - unique
+          - not_null
+      - name: total_publications
+        description: "Number of publications by publisher"
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              config:
+                min_value: 10  # Filtered in model
+      - name: publication_market_share
+        description: "Publisher's share of total publications (0-1)"
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              config:
+                min_value: 0
+                max_value: 1

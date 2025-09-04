@@ -105,6 +105,12 @@ for more information.
 
 ✅ Implemented MinIO S3 object storage for raw data files.
 
+✅ Completes dbt analytics framework:
+- **Staging Models**: Clean and standardized CrossRef data (`stg_crossref_publications`, `stg_crossref_authors`)
+- **Dimension Models**: Publications and authors with calculated metrics (`dim_publications`, `dim_authors`)
+- **Analytics Models**: Citations analysis by year, journal, and publisher (`analytics_citations_by_*`)
+- **Data Quality**: Schema tests, documentation, and data quality scoring
+
 ## MinIO S3 Object Storage Usage
 
 **What it does:** Provides S3-compatible object storage for raw data files, supporting the modern data lake architecture.
@@ -161,3 +167,64 @@ for more information.
 - **Scalability:** Object storage scales better than local file systems
 - **Data Lineage:** Clear separation between raw (S3) and processed (PostgreSQL) data
 - **dbt Ready:** Raw S3 data can be directly accessed by dbt models for transformations
+
+---
+
+## 📊 dbt Analytics Framework
+
+### Overview
+The project now includes a complete dbt analytics framework with staging models, dimension tables, and analytical queries for citation analysis.
+
+### dbt Models Structure
+```
+dbt2/models/
+├── staging/
+│   ├── stg_crossref_publications.sql    # Clean publications data
+│   └── stg_crossref_authors.sql         # Normalized author data
+├── marts/
+│   ├── dim_publications.sql             # Publications with metrics
+│   ├── dim_authors.sql                  # Author analytics & h-index
+│   ├── analytics_citations_by_year.sql  # Annual citation trends
+│   ├── analytics_citations_by_journal.sql # Journal rankings
+│   └── analytics_citations_by_publisher.sql # Publisher analysis
+├── schema.yml                           # Tests & documentation
+└── sources.yml                          # Source data definitions
+```
+
+### Key Analytics Features
+- **Citation Impact Scoring**: Publications ranked by citation impact
+- **Author Metrics**: H-index estimation, productivity scores, career analysis
+- **Temporal Analysis**: Year-over-year citation and publication trends
+- **Journal Rankings**: Impact scores, citation rates, productivity metrics  
+- **Publisher Analysis**: Market share, influence scores, portfolio analysis
+- **Data Quality**: Automated testing and quality scoring (0-1)
+
+### Running dbt Models
+
+**Note:** The active dbt project is in `dbt/` directory (scilit_analytics).
+
+1. **Install dbt dependencies:**
+   ```bash
+   cd dbt
+   dbt deps
+   ```
+
+2. **Test database connection:**
+   ```bash
+   dbt debug
+   ```
+
+3. **Run all models:**
+   ```bash
+   dbt run
+   ```
+
+4. **Run tests:**
+   ```bash
+   dbt test
+   ```
+
+5. **Generate documentation:**
+   ```bash
+   dbt docs generate && dbt docs serve
+   ```

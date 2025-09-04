@@ -1,0 +1,45 @@
+version: 2
+
+sources:
+  - name: raw_crossref
+    description: "Raw CrossRef data loaded by the ingestion pipeline"
+    tables:
+      - name: crossref_data
+        description: "CrossRef publications data from the API"
+        columns:
+          - name: id
+            description: "Primary key"
+            tests:
+              - unique
+              - not_null
+          - name: doi
+            description: "Digital Object Identifier"
+            tests:
+              - unique:
+                  config:
+                    where: "doi IS NOT NULL AND doi != ''"
+          - name: title
+            description: "Publication title"
+          - name: authors
+            description: "Array of author names"
+          - name: published_date
+            description: "Publication date"
+          - name: journal
+            description: "Journal name"
+          - name: publisher
+            description: "Publisher name"
+          - name: is_referenced_by_count
+            description: "Citation count"
+            tests:
+              - dbt_utils.accepted_range:
+                  config:
+                    min_value: 0
+          - name: reference_count
+            description: "Reference count"
+            tests:
+              - dbt_utils.accepted_range:
+                  config:
+                    min_value: 0
+        freshness:
+          warn_after: {count: 24, period: hour}
+          error_after: {count: 48, period: hour}
