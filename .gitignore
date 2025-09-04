@@ -4,6 +4,7 @@ __pycache__
 *.csv
 *.parquet
 .venv
+.idea
 dbt/dbt_packages
 dbt/target
 dbt/.user.yml
