@@ -2,7 +2,9 @@ from datetime import datetime
 
 
 class Normalizer:
-    def __init__(self,):
+    def __init__(
+        self,
+    ):
         pass
 
     def normalize(self, data):
@@ -11,26 +13,26 @@ class Normalizer:
             return self._normalize_transformed_data(data)
         else:
             return self._normalize_raw_data(data)
-    
+
     def _is_transformed_data(self, data):
         """Check if data is already transformed by DataTransformer"""
         # Transformed data has flattened structure with specific keys
-        transformed_keys = {'doi', 'title', 'publisher', 'journal', 'pub_year', 'authors', 'author_count'}
+        transformed_keys = {"doi", "title", "publisher", "journal", "pub_year", "authors", "author_count"}
         return isinstance(data, dict) and transformed_keys.issubset(set(data.keys()))
-    
+
     def _normalize_transformed_data(self, data):
         """Normalize already transformed data - mainly format conversion"""
         # Create published_date from individual components, or null if any component is missing
-        year = data.get('pub_year')
-        month = data.get('pub_month')
-        day = data.get('pub_day')
-        
+        year = data.get("pub_year")
+        month = data.get("pub_month")
+        day = data.get("pub_day")
+
         # Only create date if all components are present and valid
         if year is not None and month is not None and day is not None:
             published_date = f"{year:04d}-{month:02d}-{day:02d}"
         else:
             published_date = None
-        
+
         return {
             "title": data.get("title", ""),
             "authors": data.get("authors", ""),  # Already formatted by transformer
@@ -41,7 +43,7 @@ class Normalizer:
             "is_referenced_by_count": data.get("is_referenced_by_count", 0),
             "reference_count": data.get("reference_count", 0),
         }
-    
+
     def _normalize_raw_data(self, data):
         """Normalize raw CrossRef data (legacy support)"""
         normalized_data = {

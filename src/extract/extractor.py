@@ -44,9 +44,7 @@ class Extractor:
 
         all_data = []
 
-        for page_offset in tqdm(
-            range(0, max_pages * 200, 200), desc="Fetching pages", unit="page"
-        ):
+        for page_offset in tqdm(range(0, max_pages * 200, 200), desc="Fetching pages", unit="page"):
             try:
                 # Add offset parameter for pagination
                 url = f"{self.config.api_endpoint}&offset={page_offset}"
@@ -64,19 +62,13 @@ class Extractor:
                         break
 
                     all_data.append(data)
-                    self.logger.info(
-                        f"Fetched {len(items)} items from page offset {page_offset}"
-                    )
+                    self.logger.info(f"Fetched {len(items)} items from page offset {page_offset}")
                 else:
-                    self.logger.warning(
-                        f"No 'message' or 'items' found in response for offset {page_offset}"
-                    )
+                    self.logger.warning(f"No 'message' or 'items' found in response for offset {page_offset}")
                     break
 
             except HTTPError as http_err:
-                self.logger.error(
-                    f"HTTP error occurred for offset {page_offset}: {http_err}"
-                )
+                self.logger.error(f"HTTP error occurred for offset {page_offset}: {http_err}")
                 break
             except Exception as err:
                 self.logger.error(f"An error occurred for offset {page_offset}: {err}")
@@ -104,9 +96,7 @@ class Extractor:
 
             # Save to S3
             s3_object_name = f"crossref/raw/{filename}"
-            if self.s3_client.upload_json(
-                self.config.s3_bucket_raw, s3_object_name, data
-            ):
+            if self.s3_client.upload_json(self.config.s3_bucket_raw, s3_object_name, data):
                 self.logger.info(f"Uploaded page {i+1} data to S3: {s3_object_name}")
             else:
                 self.logger.error(f"Failed to upload page {i+1} data to S3")
@@ -133,9 +123,7 @@ class Extractor:
                             else:
                                 self.logger.warning(f"Item is not a dictionary: {item}")
                     else:
-                        self.logger.warning(
-                            f"No 'message' or 'items' found in file {file}"
-                        )
+                        self.logger.warning(f"No 'message' or 'items' found in file {file}")
                 except json.JSONDecodeError as e:
                     self.logger.error(f"Error decoding JSON from file {file}: {e}")
                     continue

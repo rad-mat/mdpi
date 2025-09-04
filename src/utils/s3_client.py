@@ -39,9 +39,7 @@ class S3Client:
             self.logger.error(f"Failed to create bucket {bucket_name}: {e}")
             return False
 
-    def upload_json(
-        self, bucket_name: str, object_name: str, data: Dict[Any, Any]
-    ) -> bool:
+    def upload_json(self, bucket_name: str, object_name: str, data: Dict[Any, Any]) -> bool:
         try:
             json_data = json.dumps(data, indent=2, default=str)
             json_bytes = json_data.encode("utf-8")
@@ -62,20 +60,14 @@ class S3Client:
 
     def upload_file(self, bucket_name: str, object_name: str, file_path: str) -> bool:
         try:
-            self.client.fput_object(
-                bucket_name=bucket_name, object_name=object_name, file_path=file_path
-            )
-            self.logger.info(
-                f"Uploaded file {file_path} as {object_name} to bucket {bucket_name}"
-            )
+            self.client.fput_object(bucket_name=bucket_name, object_name=object_name, file_path=file_path)
+            self.logger.info(f"Uploaded file {file_path} as {object_name} to bucket {bucket_name}")
             return True
         except S3Error as e:
             self.logger.error(f"Failed to upload file {file_path}: {e}")
             return False
 
-    def download_json(
-        self, bucket_name: str, object_name: str
-    ) -> Optional[Dict[Any, Any]]:
+    def download_json(self, bucket_name: str, object_name: str) -> Optional[Dict[Any, Any]]:
         try:
             response = self.client.get_object(bucket_name, object_name)
             data = json.loads(response.read().decode("utf-8"))
@@ -91,20 +83,14 @@ class S3Client:
 
     def list_objects(self, bucket_name: str, prefix: str = "") -> list:
         try:
-            objects = self.client.list_objects(
-                bucket_name, prefix=prefix, recursive=True
-            )
+            objects = self.client.list_objects(bucket_name, prefix=prefix, recursive=True)
             object_list = [obj.object_name for obj in objects]
-            self.logger.info(
-                f"Listed {len(object_list)} objects from bucket {bucket_name}"
-            )
+            self.logger.info(f"Listed {len(object_list)} objects from bucket {bucket_name}")
             return object_list
         except S3Error as e:
             self.logger.error(f"Failed to list objects from bucket {bucket_name}: {e}")
             return []
 
-    def generate_object_name(
-        self, prefix: str = "crossref", extension: str = "json"
-    ) -> str:
+    def generate_object_name(self, prefix: str = "crossref", extension: str = "json") -> str:
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         return f"{prefix}/{timestamp}.{extension}"

@@ -43,9 +43,7 @@ def main():
         from main_orchestrated import run_full_pipeline
 
         result = run_full_pipeline(max_pages=args.max_pages)
-        print(
-            f"Full pipeline completed! Processed {result['processed_records']} records."
-        )
+        print(f"Full pipeline completed! Processed {result['processed_records']} records.")
 
 
 if __name__ == "__main__":

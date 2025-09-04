@@ -28,6 +28,4 @@ def run_full_pipeline(max_pages: int = 5):
 if __name__ == "__main__":
     # Run the full pipeline with default settings
     result = run_full_pipeline()
-    print(
-        f"Pipeline completed successfully! Processed {result['processed_records']} records."
-    )
+    print(f"Pipeline completed successfully! Processed {result['processed_records']} records.")
