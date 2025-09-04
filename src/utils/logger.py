@@ -1,7 +1,10 @@
 import logging
 import os
 
-def setup_logger(name: str, log_file: str = "app.log", level: int = logging.INFO) -> logging.Logger:
+
+def setup_logger(
+    name: str, log_file: str = "app.log", level: int = logging.INFO
+) -> logging.Logger:
     """
     Sets up a logger with the specified name, log file, and logging level.
 
@@ -28,7 +31,9 @@ def setup_logger(name: str, log_file: str = "app.log", level: int = logging.INFO
     console_handler.setLevel(level)
 
     # Create formatter and add it to the handlers
-    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    formatter = logging.Formatter(
+        "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    )
     file_handler.setFormatter(formatter)
     console_handler.setFormatter(formatter)
 

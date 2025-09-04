@@ -1,7 +1,7 @@
 {{ config(materialized='table') }}
 
 with yearly_citations as (
-    select 
+    select
         published_year,
         count(*) as total_publications,
         sum(is_referenced_by_count) as total_citations,
@@ -19,40 +19,40 @@ with yearly_citations as (
 ),
 
 yearly_trends as (
-    select 
+    select
         *,
         -- Calculate year-over-year growth
         lag(total_publications) over (order by published_year) as prev_year_publications,
         lag(total_citations) over (order by published_year) as prev_year_citations,
-        
+
         -- Citation rate
-        case 
-            when total_publications > 0 then 
-                cited_publications::float / total_publications 
-            else 0 
+        case
+            when total_publications > 0 then
+                cited_publications::float / total_publications
+            else 0
         end as citation_rate,
-        
+
         current_timestamp as dbt_updated_at
-        
+
     from yearly_citations
 ),
 
 final as (
-    select 
+    select
         *,
         -- Growth rates
-        case 
-            when prev_year_publications > 0 then 
+        case
+            when prev_year_publications > 0 then
                 ((total_publications - prev_year_publications)::float / prev_year_publications) * 100
-            else null 
+            else null
         end as publications_growth_rate_pct,
-        
-        case 
-            when prev_year_citations > 0 then 
+
+        case
+            when prev_year_citations > 0 then
                 ((total_citations - prev_year_citations)::float / prev_year_citations) * 100
-            else null 
+            else null
         end as citations_growth_rate_pct
-        
+
     from yearly_trends
 )
 

@@ -1,5 +1,6 @@
 from datetime import datetime
 
+
 class Normalizer:
     def __init__(self,):
         pass
@@ -32,11 +33,11 @@ class Normalizer:
         normalized_data["authors"] = self.__merge_list(normalized_data["authors"], separator=", ")
 
         return normalized_data
-    
+
     def __polyfill_date(self, date_parts) -> str:
         if not date_parts:
             return "1970-01-01"
-        
+
         # dateparts is an array of year, month, day - fill missing parts with 01
 
         if not isinstance(date_parts, list):
@@ -63,9 +64,8 @@ class Normalizer:
         date = f"{year:04d}-{month:02d}-{day:02d}"
 
         return date
-    
 
-    def __merge_list(self, list, separator = ", ") -> str:
+    def __merge_list(self, list, separator=", ") -> str:
         """
         Merge a list into a string with a separator.
         """
@@ -73,5 +73,5 @@ class Normalizer:
             return ""
         if isinstance(list, str):
             return list
-        
+
         return separator.join(list)

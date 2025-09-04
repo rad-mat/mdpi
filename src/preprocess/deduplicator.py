@@ -12,5 +12,5 @@ class Deduplicator:
             if doi and doi not in self.seen:
                 unique_data.append(item)
                 self.seen.add(doi)
-        
+
         return unique_data

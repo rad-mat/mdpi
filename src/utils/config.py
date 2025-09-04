@@ -1,5 +1,6 @@
 from typing import Dict
 
+
 class Config:
     """
     Configuration class for the application.
@@ -50,7 +51,7 @@ class Config:
         """
         if not self.api_endpoint:
             raise ValueError("API_ENDPOINT is required.")
-        
+
         if not self.db_host:
             raise ValueError("DB_HOST is required.")
         if not self.db_name:
@@ -72,7 +73,7 @@ class Config:
             raise ValueError("S3_SECRET_KEY is required.")
         if not self.s3_bucket_raw:
             raise ValueError("S3_BUCKET_RAW is required.")
-        
+
         if not isinstance(self.log_file, str) or not self.log_file.strip():
             raise ValueError("LOG_FILE must be a non-empty string.")
         if not isinstance(self.log_level, str) or not self.log_level.strip():

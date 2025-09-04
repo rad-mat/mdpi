@@ -202,7 +202,7 @@ dbt2/models/
 - **Citation Impact Scoring**: Publications ranked by citation impact
 - **Author Metrics**: H-index estimation, productivity scores, career analysis
 - **Temporal Analysis**: Year-over-year citation and publication trends
-- **Journal Rankings**: Impact scores, citation rates, productivity metrics  
+- **Journal Rankings**: Impact scores, citation rates, productivity metrics
 - **Publisher Analysis**: Market share, influence scores, portfolio analysis
 - **Data Quality**: Automated testing and quality scoring (0-1)
 
@@ -313,7 +313,7 @@ python main_orchestrated.py
 ```bash
 # Run individual pipeline components
 python run_individual_pipelines.py extract --max-pages 5
-python run_individual_pipelines.py preprocess  
+python run_individual_pipelines.py preprocess
 python run_individual_pipelines.py load
 python run_individual_pipelines.py all --max-pages 3
 ```
@@ -336,7 +336,7 @@ config = Config({
     "API_ENDPOINT": "https://api.crossref.org/works?sort=published&order=desc&rows=200",
     "DB_HOST": "localhost",
     "DB_PORT": 5432,
-    "DB_NAME": "my_database", 
+    "DB_NAME": "my_database",
     "DB_USER": "my_user",
     "DB_PASSWORD": "my_password",
     "S3_HOST": "localhost",
@@ -362,12 +362,12 @@ prefect deploy --name crossref-etl-pipeline
 
 ### Key Benefits
 
-✅ **Modularity**: Each pipeline stage can be developed, tested, and run independently  
-✅ **Observability**: Comprehensive logging and monitoring at task and flow levels  
-✅ **Error Handling**: Built-in retry logic and failure handling  
-✅ **Scalability**: Easy to scale individual components or add new pipeline stages  
-✅ **Data Lineage**: Clear tracking of data transformations through the pipeline  
-✅ **Development**: Simplified testing and debugging of individual components  
+✅ **Modularity**: Each pipeline stage can be developed, tested, and run independently
+✅ **Observability**: Comprehensive logging and monitoring at task and flow levels
+✅ **Error Handling**: Built-in retry logic and failure handling
+✅ **Scalability**: Easy to scale individual components or add new pipeline stages
+✅ **Data Lineage**: Clear tracking of data transformations through the pipeline
+✅ **Development**: Simplified testing and debugging of individual components
 
 ### Files Added/Modified
 
@@ -375,10 +375,80 @@ prefect deploy --name crossref-etl-pipeline
 ├── pipelines/                          # New pipeline modules
 │   ├── __init__.py
 │   ├── extract_pipeline.py            # Extract workflow
-│   ├── preprocess_pipeline.py         # Preprocess workflow  
+│   ├── preprocess_pipeline.py         # Preprocess workflow
 │   └── load_pipeline.py               # Load workflow
 ├── main_orchestrated.py               # New orchestrated entrypoint
 ├── run_individual_pipelines.py        # CLI tool for individual components
 ├── prefect.yaml                       # Deployment configuration
 └── main.py                            # Original monolithic script (preserved)
 ```
+
+---
+
+## 🔧 Code Quality Tools
+
+This project uses several code quality tools to maintain consistent style and catch issues early:
+
+### **flake8** - Style Guide Enforcement
+**Purpose**: Checks Python code against PEP 8 style guidelines and detects programming errors.
+
+**Configuration**: See `.flake8` for project-specific settings:
+- Maximum line length: 120 characters  
+- Ignores docstring warnings (D-series codes)
+- Excludes build directories and virtual environments
+
+**Usage**:
+```bash
+# Check all files for style issues
+flake8 .
+
+# Check specific file
+flake8 src/extract/extractor.py
+```
+
+### **black** - Code Formatter
+**Purpose**: Automatically formats Python code to ensure consistent style.
+
+**Usage**:
+```bash
+# Format all Python files
+black .
+
+# Check what would be changed without modifying files
+black --check .
+```
+
+### **isort** - Import Sorter
+**Purpose**: Automatically sorts and organizes Python import statements.
+
+**Usage**:
+```bash
+# Sort imports in all files
+isort .
+
+# Check import sorting without modifying files
+isort --check-only .
+```
+
+### **pre-commit** - Git Hook Framework
+**Purpose**: Runs code quality checks automatically before each commit.
+
+**Setup**:
+```bash
+# Install pre-commit hooks (one-time setup)
+pre-commit install
+
+# Run hooks manually on all files
+pre-commit run --all-files
+```
+
+**Hooks configured** (see `.pre-commit-config.yaml`):
+- Trim trailing whitespace
+- Fix end of files
+- Check YAML syntax
+- Check for large files
+- Check for merge conflicts
+- Remove debug statements
+- Run black formatter
+- Run isort import sorter
+- Run flake8 style checker

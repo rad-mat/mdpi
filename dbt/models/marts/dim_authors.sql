@@ -1,7 +1,7 @@
 {{ config(materialized='table') }}
 
 with author_publications as (
-    select 
+    select
         author_id,
         author_name,
         publication_id,
@@ -12,7 +12,7 @@ with author_publications as (
 ),
 
 author_metrics as (
-    select 
+    select
         ap.author_id,
         min(ap.author_name) as author_name,  -- Use min to get consistent name
         count(distinct ap.publication_id) as total_publications,
@@ -26,35 +26,35 @@ author_metrics as (
         count(distinct pub.publisher) as publishers_worked_with,
         current_timestamp as dbt_updated_at
     from author_publications ap
-    left join {{ ref('dim_publications') }} pub 
+    left join {{ ref('dim_publications') }} pub
         on ap.publication_id = pub.id
     group by ap.author_id
 ),
 
 author_productivity as (
-    select 
+    select
         *,
         -- H-index approximation (simplified)
-        case 
-            when total_publications >= 10 then 
+        case
+            when total_publications >= 10 then
                 sqrt(total_citations * total_publications / 2)::int
-            else total_publications 
+            else total_publications
         end as estimated_h_index,
-        
+
         -- Publications per year
-        case 
-            when career_span_years > 0 then 
+        case
+            when career_span_years > 0 then
                 total_publications::float / career_span_years
             else total_publications::float
         end as publications_per_year,
-        
+
         -- First author ratio
-        case 
-            when total_publications > 0 then 
+        case
+            when total_publications > 0 then
                 first_author_papers::float / total_publications
             else 0
         end as first_author_ratio
-        
+
     from author_metrics
 )
 

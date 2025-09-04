@@ -1,7 +1,7 @@
 {{ config(materialized='table') }}
 
 with journal_citations as (
-    select 
+    select
         journal,
         count(*) as total_publications,
         count(distinct published_year) as years_active,
@@ -21,34 +21,34 @@ with journal_citations as (
 ),
 
 journal_rankings as (
-    select 
+    select
         *,
         -- Rank journals by various metrics
         row_number() over (order by total_citations desc) as rank_by_total_citations,
         row_number() over (order by avg_citations_per_paper desc) as rank_by_avg_citations,
         row_number() over (order by total_publications desc) as rank_by_publication_count,
-        
+
         -- Impact metrics
-        case 
-            when total_publications > 0 then 
-                cited_publications::float / total_publications 
-            else 0 
+        case
+            when total_publications > 0 then
+                cited_publications::float / total_publications
+            else 0
         end as citation_rate,
-        
+
         -- Journal productivity
-        case 
-            when years_active > 0 then 
-                total_publications::float / years_active 
+        case
+            when years_active > 0 then
+                total_publications::float / years_active
             else total_publications::float
         end as publications_per_year,
-        
+
         current_timestamp as dbt_updated_at
-        
+
     from journal_citations
 ),
 
 final as (
-    select 
+    select
         *,
         -- Overall journal score (weighted combination of metrics)
         (
@@ -56,7 +56,7 @@ final as (
             (citation_rate) * 0.3 +
             (publications_per_year / nullif((select max(publications_per_year) from journal_rankings), 0)) * 0.3
         ) * 100 as journal_impact_score
-        
+
     from journal_rankings
 )
 

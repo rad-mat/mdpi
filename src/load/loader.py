@@ -1,10 +1,13 @@
 from logging import Logger
+
 from src.utils.config import Config
+
 
 class Loader:
     """
     A class to load normalized data into Postgres database.
     """
+
     def __init__(self, config: Config, logger: Logger):
         self.config = config
         self.logger = logger
@@ -28,7 +31,8 @@ class Loader:
         );
         """
         self.insert_query = f"""
-        INSERT INTO {self.table_name} (title, authors, published_date, doi, journal, publisher, is_referenced_by_count, reference_count)
+        INSERT INTO {self.table_name} (title, authors, published_date, doi, journal,
+        publisher, is_referenced_by_count, reference_count)
         VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
         ON CONFLICT (doi) DO NOTHING;
         """
@@ -45,7 +49,10 @@ class Loader:
             import psycopg
 
             # Create a connection string
-            conn_string = f"postgresql://{self.config.db_user}:{self.config.db_password}@{self.config.db_host}:{self.config.db_port}/{self.config.db_name}"
+            conn_string = (
+                f"postgresql://{self.config.db_user}:{self.config.db_password}"
+                f"@{self.config.db_host}:{self.config.db_port}/{self.config.db_name}"
+            )
             self.connection = psycopg.connect(conn_string)
             self.cursor = self.connection.cursor()
             self.logger.info("Connected to the database successfully.")
@@ -76,16 +83,19 @@ class Loader:
         try:
             self.connect_to_db()
             for record in data:
-                self.cursor.execute(self.insert_query, (
-                    record["title"],
-                    record["authors"].split(", "),
-                    record["published_date"],
-                    record["doi"],
-                    record["journal"],
-                    record["publisher"],
-                    record["is_referenced_by_count"],
-                    record["reference_count"]
-                ))
+                self.cursor.execute(
+                    self.insert_query,
+                    (
+                        record["title"],
+                        record["authors"].split(", "),
+                        record["published_date"],
+                        record["doi"],
+                        record["journal"],
+                        record["publisher"],
+                        record["is_referenced_by_count"],
+                        record["reference_count"],
+                    ),
+                )
             self.connection.commit()
             self.logger.info("Data loaded successfully.")
         except Exception as e:

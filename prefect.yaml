@@ -10,7 +10,7 @@ work_pool:
 # Build configuration
 build: null
 
-# Push configuration  
+# Push configuration
 push: null
 
 # Pull configuration

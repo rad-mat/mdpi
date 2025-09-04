@@ -1,7 +1,7 @@
 {{ config(materialized='table') }}
 
 with publications as (
-    select 
+    select
         id,
         title,
         published_date,
@@ -20,31 +20,31 @@ with publications as (
 ),
 
 publication_metrics as (
-    select 
+    select
         *,
         -- Calculate citation impact scores
-        case 
-            when is_referenced_by_count > 0 then 
+        case
+            when is_referenced_by_count > 0 then
                 ln(is_referenced_by_count + 1) * 10  -- log scale impact score
-            else 0 
+            else 0
         end as citation_impact_score,
-        
+
         -- Publication age in years
         extract(year from current_date) - published_year as publication_age_years,
-        
+
         -- Data quality score (0-1)
         (case when not is_missing_title then 0.25 else 0 end +
          case when not is_missing_doi then 0.25 else 0 end +
          case when not is_missing_journal then 0.25 else 0 end +
          case when not is_missing_authors then 0.25 else 0 end) as data_quality_score,
-         
+
         -- Citation rate per year
-        case 
+        case
             when extract(year from current_date) - published_year > 0 then
                 is_referenced_by_count::float / (extract(year from current_date) - published_year)
             else is_referenced_by_count::float
         end as citations_per_year
-        
+
     from publications
 )
 

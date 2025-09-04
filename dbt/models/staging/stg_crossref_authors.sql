@@ -1,7 +1,7 @@
 {{ config(materialized='view') }}
 
 with publications as (
-    select 
+    select
         id as publication_id,
         doi,
         authors,
@@ -12,7 +12,7 @@ with publications as (
 ),
 
 authors_unnested as (
-    select 
+    select
         publication_id,
         doi,
         title,

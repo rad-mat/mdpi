@@ -1,7 +1,7 @@
 {{ config(materialized='table') }}
 
 with publisher_citations as (
-    select 
+    select
         publisher,
         count(*) as total_publications,
         count(distinct journal) as total_journals,
@@ -22,41 +22,41 @@ with publisher_citations as (
 ),
 
 publisher_rankings as (
-    select 
+    select
         *,
         -- Rank publishers by various metrics
         row_number() over (order by total_citations desc) as rank_by_total_citations,
         row_number() over (order by avg_citations_per_paper desc) as rank_by_avg_citations,
         row_number() over (order by total_publications desc) as rank_by_publication_count,
         row_number() over (order by total_journals desc) as rank_by_journal_count,
-        
+
         -- Impact metrics
-        case 
-            when total_publications > 0 then 
-                cited_publications::float / total_publications 
-            else 0 
+        case
+            when total_publications > 0 then
+                cited_publications::float / total_publications
+            else 0
         end as citation_rate,
-        
+
         -- Publisher productivity
-        case 
-            when years_active > 0 then 
-                total_publications::float / years_active 
+        case
+            when years_active > 0 then
+                total_publications::float / years_active
             else total_publications::float
         end as publications_per_year,
-        
-        case 
-            when years_active > 0 then 
-                total_journals::float / years_active 
+
+        case
+            when years_active > 0 then
+                total_journals::float / years_active
             else total_journals::float
         end as journals_per_year,
-        
+
         current_timestamp as dbt_updated_at
-        
+
     from publisher_citations
 ),
 
 market_share as (
-    select 
+    select
         pr.*,
         -- Market share calculations
         pr.total_publications::float / sum(pr.total_publications) over () as publication_market_share,
@@ -66,7 +66,7 @@ market_share as (
 ),
 
 final as (
-    select 
+    select
         *,
         -- Publisher influence score
         (
@@ -75,7 +75,7 @@ final as (
             (publication_market_share) * 0.25 +
             (citation_market_share) * 0.2
         ) * 100 as publisher_influence_score
-        
+
     from market_share
 )
 
