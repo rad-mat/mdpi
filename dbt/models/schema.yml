@@ -28,7 +28,7 @@ models:
         tests:
           - not_null
           - accepted_values:
-              config:
+              arguments:
                 values: "{{ range(1900, 2030) | list }}"
       - name: is_referenced_by_count
         description: "Number of citations received"

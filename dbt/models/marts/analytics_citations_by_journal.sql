@@ -3,7 +3,6 @@
 with journal_citations as (
     select 
         journal,
-        publisher,
         count(*) as total_publications,
         count(distinct published_year) as years_active,
         min(published_year) as first_publication_year,
@@ -18,7 +17,7 @@ with journal_citations as (
         avg(data_quality_score) as avg_data_quality_score
     from {{ ref('dim_publications') }}
     where trim(journal) != ''
-    group by journal, publisher
+    group by journal
 ),
 
 journal_rankings as (

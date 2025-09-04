@@ -14,7 +14,7 @@ with author_publications as (
 author_metrics as (
     select 
         ap.author_id,
-        ap.author_name,
+        min(ap.author_name) as author_name,  -- Use min to get consistent name
         count(distinct ap.publication_id) as total_publications,
         min(ap.published_year) as first_publication_year,
         max(ap.published_year) as latest_publication_year,
@@ -28,7 +28,7 @@ author_metrics as (
     from author_publications ap
     left join {{ ref('dim_publications') }} pub 
         on ap.publication_id = pub.id
-    group by 1, 2
+    group by ap.author_id
 ),
 
 author_productivity as (

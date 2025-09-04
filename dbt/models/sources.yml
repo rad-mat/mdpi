@@ -3,6 +3,7 @@ version: 2
 sources:
   - name: raw_crossref
     description: "Raw CrossRef data loaded by the ingestion pipeline"
+    schema: public
     tables:
       - name: crossref_data
         description: "CrossRef publications data from the API"
