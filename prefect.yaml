@@ -1,0 +1,32 @@
+# Prefect deployment configuration
+name: crossref-data-pipeline
+version: 1.0.0
+
+# Define the work pool for running flows
+work_pool:
+  name: default-agent-pool
+  work_queue_name: default
+
+# Build configuration
+build: null
+
+# Push configuration  
+push: null
+
+# Pull configuration
+pull:
+- prefect.deployments.steps.git_clone:
+    repository: .
+    branch: main
+
+# Deployment configuration
+deployments:
+- name: crossref-etl-pipeline
+  entrypoint: main_orchestrated.py:run_full_pipeline
+  parameters:
+    max_pages: 5
+  schedule:
+    cron: "0 6 * * *"  # Run daily at 6 AM
+    timezone: "UTC"
+  work_pool:
+    name: default-agent-pool

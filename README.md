@@ -111,6 +111,13 @@ for more information.
 - **Analytics Models**: Citations analysis by year, journal, and publisher (`analytics_citations_by_*`)
 - **Data Quality**: Schema tests, documentation, and data quality scoring
 
+✅ **Prefect Pipeline Orchestration**:
+- **Modular Architecture**: Decomposed monolithic `main.py` into distinct pipeline components
+- **Extract Pipeline**: Fetches CrossRef API data and stores in MinIO S3
+- **Preprocess Pipeline**: Normalizes, deduplicates, and saves processed data
+- **Load Pipeline**: Loads clean data into PostgreSQL database
+- **Orchestration**: Complete workflow management with retry logic and monitoring
+
 ## MinIO S3 Object Storage Usage
 
 **What it does:** Provides S3-compatible object storage for raw data files, supporting the modern data lake architecture.
@@ -228,3 +235,150 @@ dbt2/models/
    ```bash
    dbt docs generate && dbt docs serve
    ```
+
+---
+
+## 🔄 Prefect Pipeline Orchestration
+
+### Overview
+The project has been refactored from a monolithic `main.py` script into a modular, orchestrated pipeline using **Prefect** for workflow management. This provides better observability, error handling, and scalability.
+
+### Pipeline Architecture
+
+```
+┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
+│  Extract        │    │  Preprocess      │    │  Load           │
+│  Pipeline       │──▶ │  Pipeline        │──▶ │  Pipeline       │
+│                 │    │                  │    │                 │
+│ • Fetch API     │    │ • Normalize      │    │ • Load to DB    │
+│ • Save to S3    │    │ • Deduplicate    │    │ • Data quality  │
+│ • Raw storage   │    │ • Clean data     │    │ • Insert records│
+└─────────────────┘    └──────────────────┘    └─────────────────┘
+```
+
+### Pipeline Components
+
+#### 1. **Extract Pipeline** (`pipelines/extract_pipeline.py`)
+- **Purpose**: Fetch data from CrossRef API and store raw data
+- **Tasks**:
+  - `setup_extract_config()` - Initialize configuration
+  - `setup_extract_logger()` - Setup logging
+  - `fetch_crossref_data()` - API data fetching with pagination
+  - `extract_raw_data()` - Retrieve data from S3 storage
+- **Output**: Raw CrossRef data stored in MinIO S3 and local files
+
+#### 2. **Preprocess Pipeline** (`pipelines/preprocess_pipeline.py`)
+- **Purpose**: Clean, normalize, and deduplicate raw data
+- **Tasks**:
+  - `setup_preprocess_logger()` - Setup logging
+  - `normalize_data()` - Standardize data format and structure
+  - `deduplicate_data()` - Remove duplicate records
+  - `save_processed_data()` - Save clean data to JSON
+- **Output**: Clean, deduplicated data ready for database loading
+
+#### 3. **Load Pipeline** (`pipelines/load_pipeline.py`)
+- **Purpose**: Load processed data into PostgreSQL database
+- **Tasks**:
+  - `setup_load_config()` - Database configuration
+  - `setup_load_logger()` - Setup logging
+  - `load_data_to_database()` - Insert records into database
+- **Output**: Data persisted in PostgreSQL for dbt analytics
+
+### Usage Instructions
+
+#### 1. **Prerequisites Setup**
+
+Ensure Docker services are running:
+```bash
+# Start PostgreSQL and MinIO services
+sudo docker-compose up -d
+
+# Verify services are healthy
+curl -f http://localhost:9000/minio/health/live
+```
+
+Install Prefect (already included in requirements.txt):
+```bash
+pip install prefect
+```
+
+#### 2. **Running the Complete Pipeline**
+
+**Option A: Run the full orchestrated pipeline**
+```bash
+python main_orchestrated.py
+```
+
+**Option B: Use the CLI runner for individual components**
+```bash
+# Run individual pipeline components
+python run_individual_pipelines.py extract --max-pages 5
+python run_individual_pipelines.py preprocess  
+python run_individual_pipelines.py load
+python run_individual_pipelines.py all --max-pages 3
+```
+
+#### 3. **Monitoring and Observability**
+
+Prefect provides built-in monitoring through:
+- **Task-level logging**: Each task logs its progress and results
+- **Flow execution tracking**: Monitor pipeline runs and completion status
+- **Error handling**: Automatic retry logic for failed tasks
+- **Data lineage**: Track data flow between pipeline stages
+
+#### 4. **Configuration**
+
+Pipeline configuration is centralized in each pipeline module:
+
+```python
+# Common configuration across all pipelines
+config = Config({
+    "API_ENDPOINT": "https://api.crossref.org/works?sort=published&order=desc&rows=200",
+    "DB_HOST": "localhost",
+    "DB_PORT": 5432,
+    "DB_NAME": "my_database", 
+    "DB_USER": "my_user",
+    "DB_PASSWORD": "my_password",
+    "S3_HOST": "localhost",
+    "S3_PORT": 9000,
+    "S3_ACCESS_KEY": "minioadmin",
+    "S3_SECRET_KEY": "minioadmin123",
+    "S3_BUCKET_RAW": "crossref-raw",
+    "LOG_FILE": "logs/app.log",
+    "LOG_LEVEL": "INFO"
+})
+```
+
+#### 5. **Scheduling (Optional)**
+
+For automated execution, use the included Prefect deployment configuration:
+
+```bash
+# Deploy pipeline with daily schedule
+prefect deploy --name crossref-etl-pipeline
+
+# The pipeline will run daily at 6 AM UTC as configured in prefect.yaml
+```
+
+### Key Benefits
+
+✅ **Modularity**: Each pipeline stage can be developed, tested, and run independently  
+✅ **Observability**: Comprehensive logging and monitoring at task and flow levels  
+✅ **Error Handling**: Built-in retry logic and failure handling  
+✅ **Scalability**: Easy to scale individual components or add new pipeline stages  
+✅ **Data Lineage**: Clear tracking of data transformations through the pipeline  
+✅ **Development**: Simplified testing and debugging of individual components  
+
+### Files Added/Modified
+
+```
+├── pipelines/                          # New pipeline modules
+│   ├── __init__.py
+│   ├── extract_pipeline.py            # Extract workflow
+│   ├── preprocess_pipeline.py         # Preprocess workflow  
+│   └── load_pipeline.py               # Load workflow
+├── main_orchestrated.py               # New orchestrated entrypoint
+├── run_individual_pipelines.py        # CLI tool for individual components
+├── prefect.yaml                       # Deployment configuration
+└── main.py                            # Original monolithic script (preserved)
+```
