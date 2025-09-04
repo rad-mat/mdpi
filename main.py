@@ -16,6 +16,12 @@ config = Config(config={
     "DB_NAME": "my_database",
     "DB_USER": "my_user",
     "DB_PASSWORD": "my_password",
+    "S3_HOST": "localhost",
+    "S3_PORT": 9000,
+    "S3_ACCESS_KEY": "minioadmin",
+    "S3_SECRET_KEY": "minioadmin123",
+    "S3_SECURE": "false",
+    "S3_BUCKET_RAW": "crossref-raw",
     "LOG_FILE": "logs/app.log",
     "LOG_LEVEL": "INFO",
 })
