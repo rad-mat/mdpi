@@ -103,41 +103,19 @@ for more information.
 
 ✅ Enhanced the CrossRef API data fetching to loop through multiple pages of API responses.
 
+✅ Added some basic preprocessing logic to clean the raw data (using Polars).
+
 ✅ Implemented MinIO S3 object storage for raw data files.
 
-✅ Completes dbt analytics framework:
-- **Staging Models**: Clean and standardized CrossRef data (`stg_crossref_publications`, `stg_crossref_authors`)
-- **Dimension Models**: Publications and authors with calculated metrics (`dim_publications`, `dim_authors`)
-- **Analytics Models**: Citations analysis by year, journal, and publisher (`analytics_citations_by_*`)
-- **Data Quality**: Schema tests, documentation, and data quality scoring
+✅ Completed dbt analytics framework.
 
-✅ **Prefect Pipeline Orchestration**:
-- **Modular Architecture**: Decomposed monolithic `main.py` into distinct pipeline components
-- **Extract Pipeline**: Fetches CrossRef API data and stores in MinIO S3
-- **Preprocess Pipeline**: Normalizes, deduplicates, and saves processed data
-- **Load Pipeline**: Loads clean data into PostgreSQL database
-- **Orchestration**: Complete workflow management with retry logic and monitoring
+✅ Orchestrated Pipeline with Prefect.
 
-## MinIO S3 Object Storage Usage
+✅ Configured code quality tools: flake8, black, isort, pre-commit.
+
+### MinIO S3 Object Storage Usage
 
 **What it does:** Provides S3-compatible object storage for raw data files, supporting the modern data lake architecture.
-
-**Setup:**
-1. **Docker Services:**
-   - API endpoint: `http://localhost:9000`
-   - Web Console: `http://localhost:9001`
-   - Default credentials: `minioadmin` / `minioadmin123`
-
-2. **S3 Client Utility:** Created `src/utils/s3_client.py` with methods for:
-   - Bucket creation and management
-   - JSON data upload/download
-   - File operations
-   - Object listing
-
-3. **Pipeline Integration:** Updated `src/extract/extractor.py` to:
-   - Save raw CrossRef data to both local files AND MinIO S3
-   - Auto-create S3 buckets (`crossref-raw` by default)
-   - Upload each API response page as separate objects
 
 **How to use:**
 
@@ -145,75 +123,27 @@ for more information.
    ```bash
    docker-compose up -d
    ```
+   
+2. **Run the pipeline:**
+   ```bash
+   python main_orchestrated.py
+   ```
+   Raw data will be automatically stored in both `./data/raw/` and MinIO S3 bucket `crossref-raw`.
 
-2. **Access MinIO Web Console:**
+3. **Access MinIO Web Console:**
    - Open http://localhost:9001 in your browser
    - Login with `minioadmin` / `minioadmin123`
    - Browse uploaded raw data files
 
-3. **Run the pipeline:**
-   ```bash
-   python main.py
-   ```
-   Raw data will be automatically stored in both `./data/raw/` and MinIO S3 bucket `crossref-raw`.
+### 📊 dbt Analytics Framework
 
-4. **Configure S3 settings**:
-   ```python
-   config = Config({
-       "S3_HOST": "localhost",
-       "S3_PORT": 9000,
-       "S3_ACCESS_KEY": "minioadmin",
-       "S3_SECRET_KEY": "minioadmin123",
-       "S3_BUCKET_RAW": "crossref-raw",
-       # ... other configs
-   })
-   ```
+The project includes a complete dbt analytics framework with staging models, dimension tables, and analytical queries for citation analysis.
 
-**Benefits:**
-- **Data Lake Foundation:** Raw data is now stored in S3-compatible storage for dbt integration
-- **Scalability:** Object storage scales better than local file systems
-- **Data Lineage:** Clear separation between raw (S3) and processed (PostgreSQL) data
-- **dbt Ready:** Raw S3 data can be directly accessed by dbt models for transformations
-
----
-
-## 📊 dbt Analytics Framework
-
-### Overview
-The project now includes a complete dbt analytics framework with staging models, dimension tables, and analytical queries for citation analysis.
-
-### dbt Models Structure
-```
-dbt2/models/
-├── staging/
-│   ├── stg_crossref_publications.sql    # Clean publications data
-│   └── stg_crossref_authors.sql         # Normalized author data
-├── marts/
-│   ├── dim_publications.sql             # Publications with metrics
-│   ├── dim_authors.sql                  # Author analytics & h-index
-│   ├── analytics_citations_by_year.sql  # Annual citation trends
-│   ├── analytics_citations_by_journal.sql # Journal rankings
-│   └── analytics_citations_by_publisher.sql # Publisher analysis
-├── schema.yml                           # Tests & documentation
-└── sources.yml                          # Source data definitions
-```
-
-### Key Analytics Features
-- **Citation Impact Scoring**: Publications ranked by citation impact
-- **Author Metrics**: H-index estimation, productivity scores, career analysis
-- **Temporal Analysis**: Year-over-year citation and publication trends
-- **Journal Rankings**: Impact scores, citation rates, productivity metrics
-- **Publisher Analysis**: Market share, influence scores, portfolio analysis
-- **Data Quality**: Automated testing and quality scoring (0-1)
-
-### Running dbt Models
-
-**Note:** The active dbt project is in `dbt/` directory (scilit_analytics).
+**How to use:**
 
 1. **Install dbt dependencies:**
    ```bash
-   cd dbt
-   dbt deps
+   cd dbt && dbt deps
    ```
 
 2. **Test database connection:**
@@ -236,11 +166,8 @@ dbt2/models/
    dbt docs generate && dbt docs serve
    ```
 
----
-
 ## 🔄 Prefect Pipeline Orchestration
 
-### Overview
 The project has been refactored from a monolithic `main.py` script into a modular, orchestrated pipeline using **Prefect** for workflow management. This provides better observability, error handling, and scalability.
 
 ### Pipeline Architecture
@@ -284,25 +211,14 @@ The project has been refactored from a monolithic `main.py` script into a modula
   - `load_data_to_database()` - Insert records into database
 - **Output**: Data persisted in PostgreSQL for dbt analytics
 
-### Usage Instructions
+**How to use:**
 
-#### 1. **Prerequisites Setup**
-
-Ensure Docker services are running:
+1. **Start the services:**
 ```bash
-# Start PostgreSQL and MinIO services
 sudo docker-compose up -d
-
-# Verify services are healthy
-curl -f http://localhost:9000/minio/health/live
 ```
 
-Install Prefect (already included in requirements.txt):
-```bash
-pip install prefect
-```
-
-#### 2. **Running the Complete Pipeline**
+2. **Run the pipeline:**
 
 **Option A: Run the full orchestrated pipeline**
 ```bash
@@ -311,45 +227,13 @@ python main_orchestrated.py
 
 **Option B: Use the CLI runner for individual components**
 ```bash
-# Run individual pipeline components
 python run_individual_pipelines.py extract --max-pages 5
 python run_individual_pipelines.py preprocess
 python run_individual_pipelines.py load
 python run_individual_pipelines.py all --max-pages 3
 ```
 
-#### 3. **Monitoring and Observability**
-
-Prefect provides built-in monitoring through:
-- **Task-level logging**: Each task logs its progress and results
-- **Flow execution tracking**: Monitor pipeline runs and completion status
-- **Error handling**: Automatic retry logic for failed tasks
-- **Data lineage**: Track data flow between pipeline stages
-
-#### 4. **Configuration**
-
-Pipeline configuration is centralized in each pipeline module:
-
-```python
-# Common configuration across all pipelines
-config = Config({
-    "API_ENDPOINT": "https://api.crossref.org/works?sort=published&order=desc&rows=200",
-    "DB_HOST": "localhost",
-    "DB_PORT": 5432,
-    "DB_NAME": "my_database",
-    "DB_USER": "my_user",
-    "DB_PASSWORD": "my_password",
-    "S3_HOST": "localhost",
-    "S3_PORT": 9000,
-    "S3_ACCESS_KEY": "minioadmin",
-    "S3_SECRET_KEY": "minioadmin123",
-    "S3_BUCKET_RAW": "crossref-raw",
-    "LOG_FILE": "logs/app.log",
-    "LOG_LEVEL": "INFO"
-})
-```
-
-#### 5. **Scheduling (Optional)**
+3. **Scheduling (Optional)**
 
 For automated execution, use the included Prefect deployment configuration:
 
@@ -359,31 +243,6 @@ prefect deploy --name crossref-etl-pipeline
 
 # The pipeline will run daily at 6 AM UTC as configured in prefect.yaml
 ```
-
-### Key Benefits
-
-✅ **Modularity**: Each pipeline stage can be developed, tested, and run independently
-✅ **Observability**: Comprehensive logging and monitoring at task and flow levels
-✅ **Error Handling**: Built-in retry logic and failure handling
-✅ **Scalability**: Easy to scale individual components or add new pipeline stages
-✅ **Data Lineage**: Clear tracking of data transformations through the pipeline
-✅ **Development**: Simplified testing and debugging of individual components
-
-### Files Added/Modified
-
-```
-├── pipelines/                          # New pipeline modules
-│   ├── __init__.py
-│   ├── extract_pipeline.py            # Extract workflow
-│   ├── preprocess_pipeline.py         # Preprocess workflow
-│   └── load_pipeline.py               # Load workflow
-├── main_orchestrated.py               # New orchestrated entrypoint
-├── run_individual_pipelines.py        # CLI tool for individual components
-├── prefect.yaml                       # Deployment configuration
-└── main.py                            # Original monolithic script (preserved)
-```
-
----
 
 ## 🔧 Code Quality Tools
 
