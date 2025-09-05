@@ -22,14 +22,19 @@ class Normalizer:
 
     def _normalize_transformed_data(self, data):
         """Normalize already transformed data - mainly format conversion"""
-        # Create published_date from individual components, or null if any component is missing
+        # Simply concatenate date parts as they are, no processing
         year = data.get("pub_year")
         month = data.get("pub_month")
         day = data.get("pub_day")
 
-        # Only create date if all components are present and valid
-        if year is not None and month is not None and day is not None:
-            published_date = f"{year:04d}-{month:02d}-{day:02d}"
+        # Create date string from available parts
+        if year is not None:
+            if month is not None and day is not None:
+                published_date = f"{year:04d}-{month:02d}-{day:02d}"
+            elif month is not None:
+                published_date = f"{year:04d}-{month:02d}-01"
+            else:
+                published_date = f"{year:04d}-01-01"
         else:
             published_date = None
 
@@ -49,7 +54,7 @@ class Normalizer:
         normalized_data = {
             "title": data.get("title", [""])[0],
             "authors": [author.get("family", "") for author in data.get("author", [])],
-            "published_date": data.get("issued", {}).get("date-parts", [[None]])[0][0],
+            "published_date": self._extract_raw_date(data),
             "doi": data.get("DOI", ""),
             "journal": data.get("container-title", [""])[0],
             "publisher": data.get("publisher", ""),
@@ -57,49 +62,37 @@ class Normalizer:
             "reference_count": data.get("reference-count", 0),
         }
 
-        # Polyfill date
-        date_parts = normalized_data["published_date"]
-        if isinstance(date_parts, list):
-            date_parts = date_parts[0] if date_parts else []
-        elif isinstance(date_parts, str):
-            date_parts = [int(part) for part in date_parts.split("-")]
-        normalized_data["published_date"] = self.__polyfill_date(date_parts)
-
         # Merge authors into a single string
         normalized_data["authors"] = self.__merge_list(normalized_data["authors"], separator=", ")
 
         return normalized_data
 
-    def __polyfill_date(self, date_parts) -> str:
-        if not date_parts:
-            return "1970-01-01"
-
-        # dateparts is an array of year, month, day - fill missing parts with 01
-
-        if not isinstance(date_parts, list):
-            date_parts = [date_parts]
-
-        year = date_parts[0]
-        month = date_parts[1] if len(date_parts) > 1 else 1
-        day = date_parts[2] if len(date_parts) > 2 else 1
-
-        # sanitize year - if more than 12 months into the future, set to current year
-        current_year = datetime.now().year
-        if year > current_year + 1:
-            year = current_year
-
-        # sanitize month: 01 - 12 range
-        if month < 1 or month > 12:
-            month = 1
-
-        # sanitize day: 01 - 31 range
-        if day < 1 or day > 31:
-            day = 1
-
-        # format date as YYYY-MM-DD
-        date = f"{year:04d}-{month:02d}-{day:02d}"
-
-        return date
+    def _extract_raw_date(self, data):
+        """
+        Extract and format publication date - just concatenate date parts exactly as they are.
+        """
+        # Try common date fields
+        date_fields = ["issued", "published", "published-print"]
+        
+        for field in date_fields:
+            date_data = data.get(field, {})
+            if isinstance(date_data, dict) and "date-parts" in date_data:
+                date_parts = date_data.get("date-parts", [[]])
+                if date_parts and date_parts[0]:
+                    parts = date_parts[0]
+                    year = parts[0] if len(parts) > 0 else None
+                    month = parts[1] if len(parts) > 1 else None
+                    day = parts[2] if len(parts) > 2 else None
+                    
+                    if year is not None:
+                        if month is not None and day is not None:
+                            return f"{year:04d}-{month:02d}-{day:02d}"
+                        elif month is not None:
+                            return f"{year:04d}-{month:02d}-01"
+                        else:
+                            return f"{year:04d}-01-01"
+        
+        return None
 
     def __merge_list(self, list, separator=", ") -> str:
         """

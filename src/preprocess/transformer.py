@@ -37,7 +37,6 @@ class DataTransformer:
             return [self._transform_single_record(record) for record in raw_data]
 
         # Apply transformations
-        df = self._fix_date_issues(df)
         df = self._clean_author_data(df)
         df = self._standardize_identifiers(df)
         df = self._handle_missing_fields(df)
@@ -63,16 +62,22 @@ class DataTransformer:
         flattened["reference_count"] = record.get("reference-count", 0)
         flattened["is_referenced_by_count"] = record.get("is-referenced-by-count", 0)
 
-        # Extract publication date
-        published_date = record.get("issued", {}).get("date-parts", [[None, None, None]])
-        if published_date and published_date[0]:
-            flattened["pub_year"] = published_date[0][0] if len(published_date[0]) > 0 else None
-            flattened["pub_month"] = published_date[0][1] if len(published_date[0]) > 1 else None
-            flattened["pub_day"] = published_date[0][2] if len(published_date[0]) > 2 else None
-        else:
-            flattened["pub_year"] = None
-            flattened["pub_month"] = None
-            flattened["pub_day"] = None
+        # Extract publication date - try multiple fields
+        date_fields = ["issued", "published", "published-print", "published-online"]
+        flattened["pub_year"] = None
+        flattened["pub_month"] = None
+        flattened["pub_day"] = None
+        
+        for field in date_fields:
+            date_data = record.get(field, {})
+            if isinstance(date_data, dict) and "date-parts" in date_data:
+                date_parts = date_data.get("date-parts", [[]])
+                if date_parts and date_parts[0]:
+                    parts = date_parts[0]
+                    flattened["pub_year"] = parts[0] if len(parts) > 0 else None
+                    flattened["pub_month"] = parts[1] if len(parts) > 1 else None
+                    flattened["pub_day"] = parts[2] if len(parts) > 2 else None
+                    break
 
         # Extract author information
         authors = record.get("author", [])
@@ -108,61 +113,6 @@ class DataTransformer:
             return field.strip()
         return ""
 
-    def _fix_date_issues(self, df: pl.DataFrame) -> pl.DataFrame:
-        """
-        Fix common date issues. Set invalid dates to null instead of defaults.
-        """
-        today = datetime.now().date()
-
-        return df.with_columns(
-            [
-                # Set future years to null
-                pl.when(pl.col("pub_year") > self.current_year)
-                .then(pl.lit(None))
-                .otherwise(pl.col("pub_year"))
-                .alias("pub_year"),
-                # Set invalid months to null
-                pl.when(pl.col("pub_month").is_null() | (pl.col("pub_month") < 1) | (pl.col("pub_month") > 12))
-                .then(pl.lit(None))
-                .otherwise(pl.col("pub_month"))
-                .alias("pub_month"),
-                # Set invalid days to null
-                pl.when(pl.col("pub_day").is_null() | (pl.col("pub_day") < 1) | (pl.col("pub_day") > 31))
-                .then(pl.lit(None))
-                .otherwise(pl.col("pub_day"))
-                .alias("pub_day"),
-            ]
-        ).with_columns(
-            [
-                # Additional validation: check if the complete date is in the future
-                pl.when(
-                    pl.col("pub_year").is_not_null()
-                    & pl.col("pub_month").is_not_null()
-                    & pl.col("pub_day").is_not_null()
-                )
-                .then(
-                    pl.when(
-                        (pl.col("pub_year") > today.year)
-                        | ((pl.col("pub_year") == today.year) & (pl.col("pub_month") > today.month))
-                        | (
-                            (pl.col("pub_year") == today.year)
-                            & (pl.col("pub_month") == today.month)
-                            & (pl.col("pub_day") > today.day)
-                        )
-                    )
-                    .then(pl.lit(None))  # Set future dates to null
-                    .otherwise(pl.col("pub_year"))
-                )
-                .otherwise(pl.col("pub_year"))
-                .alias("pub_year"),
-                # If year is null, set month and day to null too
-                pl.when(pl.col("pub_year").is_null())
-                .then(pl.lit(None))
-                .otherwise(pl.col("pub_month"))
-                .alias("pub_month"),
-                pl.when(pl.col("pub_year").is_null()).then(pl.lit(None)).otherwise(pl.col("pub_day")).alias("pub_day"),
-            ]
-        )
 
     def _clean_author_data(self, df: pl.DataFrame) -> pl.DataFrame:
         """
